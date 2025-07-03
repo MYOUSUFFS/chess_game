@@ -1,0 +1,114 @@
+body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #333;
+}
+
+#game-container {
+    display: flex;
+    gap: 20px;
+}
+
+#board-container {
+    display: flex;
+    flex-direction: column;
+}
+
+#chessboard {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: 640px;
+    height: 640px;
+    border: 5px solid #666;
+}
+
+.square {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.light {
+    background-color: #f0d9b5;
+}
+
+.dark {
+    background-color: #b58863;
+}
+
+.piece {
+    width: 70px;
+    height: 70px;
+    cursor: pointer;
+}
+
+#sidebar {
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#turn-display {
+    height: 50px;
+    border: 1px solid #666;
+    padding: 10px;
+    background-color: #444;
+    color: white;
+    text-align: center;
+    line-height: 50px;
+    font-size: 1.2em;
+}
+
+#moves-history {
+    height: 350px; /* Adjusted height to accommodate turn-display */
+    overflow-y: auto;
+    border: 1px solid #666;
+    padding: 10px;
+    background-color: #444;
+    color: white;
+}
+
+#captured-pieces {
+    height: 200px;
+    border: 1px solid #666;
+    padding: 10px;
+    background-color: #444;
+    color: white;
+}
+
+#reset-button {
+    padding: 10px 20px;
+    background-color: #555;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+#reset-button:hover {
+    background-color: #777;
+}
+
+.move-indicator {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    pointer-events: none;
+    z-index: 10;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.square {
+    position: relative;
+}
