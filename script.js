@@ -11,6 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const popupMovesList = document.getElementById("popup-moves-list");
   const mobileRecentMoves = document.getElementById("mobile-recent-moves");
   const viewAllMovesBtn = document.getElementById("view-all-moves");
+  const undoButton = document.getElementById("undo-button");
+  const redoButton = document.getElementById("redo-button");
+  const undoTimer = document.getElementById("undo-timer");
 
   class ChessGame {
     constructor(chessboard, movesHistory, capturedPieces) {
@@ -57,12 +60,17 @@ document.addEventListener("DOMContentLoaded", () => {
       this.selectedPiece = null;
       this.selectedSquare = null;
       this.movesList = [];
+      this.gameHistory = [];
+      this.redoHistory = [];
+      this.undoTimeLeft = 0;
+      this.undoTimerInterval = null;
 
       this.createBoard();
       this.addDragListeners();
       this.setupResetButton();
       this.updateTurnDisplay();
       this.setupMovesPopup();
+      this.setupUndoRedo();
     }
 
     updateTurnDisplay() {
@@ -287,11 +295,15 @@ document.addEventListener("DOMContentLoaded", () => {
         this.selectedPiece = null;
         this.selectedSquare = null;
         this.movesList = [];
+        this.gameHistory = [];
+        this.redoHistory = [];
+        this.clearUndoTimer();
         this.clearMoveIndicators();
         this.createBoard(); // Re-render the board
         this.addDragListeners(); // Re-add listeners
         this.updateTurnDisplay(); // Reset turn indicators
         this.updateMobileMoves(); // Reset mobile moves display
+        this.updateUndoRedoButtons();
       });
     }
 
@@ -809,6 +821,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     makeMove(startRow, startCol, endRow, endCol) {
+      // Save current game state before making move
+      this.saveGameState();
+      
       const pieceType = this.board[startRow][startCol];
       const isWhitePiece = pieceType === pieceType.toUpperCase();
 
@@ -923,6 +938,12 @@ document.addEventListener("DOMContentLoaded", () => {
       this.boardHistory.push(JSON.stringify(this.board));
       this.currentPlayer = this.currentPlayer === "white" ? "black" : "white";
       this.updateTurnDisplay();
+      
+      // Clear redo history when new move is made
+      this.redoHistory = [];
+      
+      // Start 5-second undo timer
+      this.startUndoTimer();
 
       const nextPlayer = this.currentPlayer;
       if (this.isKingInCheck(nextPlayer)) {
@@ -1027,6 +1048,146 @@ document.addEventListener("DOMContentLoaded", () => {
         'P': 'P', 'R': 'R', 'N': 'N', 'B': 'B', 'Q': 'Q', 'K': 'K'
       };
       return pieceNames[piece] || piece;
+    }
+
+    setupUndoRedo() {
+      undoButton.addEventListener("click", () => {
+        this.undoMove();
+      });
+      
+      redoButton.addEventListener("click", () => {
+        this.redoMove();
+      });
+    }
+
+    saveGameState() {
+      const gameState = {
+        board: JSON.parse(JSON.stringify(this.board)),
+        currentPlayer: this.currentPlayer,
+        hasWhiteKingMoved: this.hasWhiteKingMoved,
+        hasBlackKingMoved: this.hasBlackKingMoved,
+        hasWhiteRookLeftMoved: this.hasWhiteRookLeftMoved,
+        hasWhiteRookRightMoved: this.hasWhiteRookRightMoved,
+        hasBlackRookLeftMoved: this.hasBlackRookLeftMoved,
+        hasBlackRookRightMoved: this.hasBlackRookRightMoved,
+        enPassantTargetSquare: this.enPassantTargetSquare,
+        fiftyMoveRuleCounter: this.fiftyMoveRuleCounter,
+        movesList: [...this.movesList],
+        movesHistory: this.movesHistory.innerHTML,
+        capturedPieces: this.capturedPieces.innerHTML
+      };
+      this.gameHistory.push(gameState);
+    }
+
+    undoMove() {
+      if (this.gameHistory.length === 0 || this.undoTimeLeft <= 0) return;
+      
+      // Clear the timer
+      this.clearUndoTimer();
+      
+      // Save current state to redo history
+      const currentState = {
+        board: JSON.parse(JSON.stringify(this.board)),
+        currentPlayer: this.currentPlayer,
+        hasWhiteKingMoved: this.hasWhiteKingMoved,
+        hasBlackKingMoved: this.hasBlackKingMoved,
+        hasWhiteRookLeftMoved: this.hasWhiteRookLeftMoved,
+        hasWhiteRookRightMoved: this.hasWhiteRookRightMoved,
+        hasBlackRookLeftMoved: this.hasBlackRookLeftMoved,
+        hasBlackRookRightMoved: this.hasBlackRookRightMoved,
+        enPassantTargetSquare: this.enPassantTargetSquare,
+        fiftyMoveRuleCounter: this.fiftyMoveRuleCounter,
+        movesList: [...this.movesList],
+        movesHistory: this.movesHistory.innerHTML,
+        capturedPieces: this.capturedPieces.innerHTML
+      };
+      this.redoHistory.push(currentState);
+      
+      // Restore previous state
+      const previousState = this.gameHistory.pop();
+      this.restoreGameState(previousState);
+    }
+
+    redoMove() {
+      if (this.redoHistory.length === 0) return;
+      
+      // Save current state to game history
+      this.saveGameState();
+      
+      // Restore redo state
+      const redoState = this.redoHistory.pop();
+      this.restoreGameState(redoState);
+      
+      // Start undo timer again
+      this.startUndoTimer();
+    }
+
+    restoreGameState(gameState) {
+      this.board = gameState.board;
+      this.currentPlayer = gameState.currentPlayer;
+      this.hasWhiteKingMoved = gameState.hasWhiteKingMoved;
+      this.hasBlackKingMoved = gameState.hasBlackKingMoved;
+      this.hasWhiteRookLeftMoved = gameState.hasWhiteRookLeftMoved;
+      this.hasWhiteRookRightMoved = gameState.hasWhiteRookRightMoved;
+      this.hasBlackRookLeftMoved = gameState.hasBlackRookLeftMoved;
+      this.hasBlackRookRightMoved = gameState.hasBlackRookRightMoved;
+      this.enPassantTargetSquare = gameState.enPassantTargetSquare;
+      this.fiftyMoveRuleCounter = gameState.fiftyMoveRuleCounter;
+      this.movesList = gameState.movesList;
+      this.movesHistory.innerHTML = gameState.movesHistory;
+      this.capturedPieces.innerHTML = gameState.capturedPieces;
+      
+      // Update display
+      this.createBoard();
+      this.addDragListeners();
+      this.updateTurnDisplay();
+      this.updateMobileMoves();
+      this.updateUndoRedoButtons();
+    }
+
+    startUndoTimer() {
+      this.undoTimeLeft = 5;
+      this.updateUndoRedoButtons();
+      
+      this.undoTimerInterval = setInterval(() => {
+        this.undoTimeLeft--;
+        this.updateTimerDisplay();
+        
+        if (this.undoTimeLeft <= 0) {
+          this.clearUndoTimer();
+          this.updateUndoRedoButtons();
+        }
+      }, 1000);
+    }
+
+    clearUndoTimer() {
+      if (this.undoTimerInterval) {
+        clearInterval(this.undoTimerInterval);
+        this.undoTimerInterval = null;
+      }
+      this.undoTimeLeft = 0;
+      this.updateTimerDisplay();
+    }
+
+    updateTimerDisplay() {
+      if (this.undoTimeLeft > 0) {
+        undoTimer.textContent = `Undo available: ${this.undoTimeLeft}s`;
+        undoTimer.className = this.undoTimeLeft <= 2 ? 'timer-display urgent' : 'timer-display';
+      } else {
+        undoTimer.textContent = '';
+        undoTimer.className = 'timer-display';
+      }
+    }
+
+    updateUndoRedoButtons() {
+      // Update undo button
+      undoButton.disabled = this.gameHistory.length === 0 || this.undoTimeLeft <= 0;
+      
+      // Update redo button
+      redoButton.disabled = this.redoHistory.length === 0;
+      
+      // Update timer display
+      this.updateTimerDisplay();
     }
   }
 
