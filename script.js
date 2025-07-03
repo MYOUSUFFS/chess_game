@@ -4,6 +4,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const capturedPieces = document.getElementById("captured-pieces");
   const resetButton = document.getElementById("reset-button");
   const turnDisplay = document.getElementById("turn-display");
+  const topPlayerStatus = document.getElementById("top-player-status");
+  const bottomPlayerStatus = document.getElementById("bottom-player-status");
+  const movesPopup = document.getElementById("moves-popup");
+  const closePopup = document.getElementById("close-popup");
+  const popupMovesList = document.getElementById("popup-moves-list");
+  const mobileRecentMoves = document.getElementById("mobile-recent-moves");
+  const viewAllMovesBtn = document.getElementById("view-all-moves");
 
   class ChessGame {
     constructor(chessboard, movesHistory, capturedPieces) {
@@ -49,17 +56,28 @@ document.addEventListener("DOMContentLoaded", () => {
       this.boardHistory = [];
       this.selectedPiece = null;
       this.selectedSquare = null;
+      this.movesList = [];
 
       this.createBoard();
       this.addDragListeners();
       this.setupResetButton();
       this.updateTurnDisplay();
+      this.setupMovesPopup();
     }
 
     updateTurnDisplay() {
       turnDisplay.textContent = `${
         this.currentPlayer.charAt(0).toUpperCase() + this.currentPlayer.slice(1)
       }'s Turn`;
+      
+      // Update player indicators
+      if (this.currentPlayer === "white") {
+        bottomPlayerStatus.classList.add("active");
+        topPlayerStatus.classList.remove("active");
+      } else {
+        topPlayerStatus.classList.add("active");
+        bottomPlayerStatus.classList.remove("active");
+      }
     }
 
     createBoard() {
@@ -94,18 +112,76 @@ document.addEventListener("DOMContentLoaded", () => {
           const pieceType = this.board[row][col];
           const isWhitePiece = pieceType === pieceType.toUpperCase();
 
-          // Only handle clicks for current player's pieces
+          // Handle clicks for current player's pieces
           if (
             (this.currentPlayer === "white" && isWhitePiece) ||
             (this.currentPlayer === "black" && !isWhitePiece)
           ) {
             e.stopPropagation();
-            this.clearMoveIndicators();
-            this.selectedPiece = piece;
-            this.selectedSquare = square;
-            this.showPossibleMoves(row, col);
+            // If this piece is already selected, don't clear indicators
+            if (this.selectedPiece !== piece) {
+              this.clearMoveIndicators();
+              this.selectedPiece = piece;
+              this.selectedSquare = square;
+              this.showPossibleMoves(row, col);
+            }
+          } else {
+            // Handle clicks on opponent pieces (for capture)
+            if (this.selectedPiece && this.selectedSquare) {
+              e.stopPropagation();
+              const startRow = parseInt(this.selectedSquare.dataset.row);
+              const startCol = parseInt(this.selectedSquare.dataset.col);
+              const endRow = parseInt(square.dataset.row);
+              const endCol = parseInt(square.dataset.col);
+
+              if (this.isValidMove(startRow, startCol, endRow, endCol)) {
+                this.makeMove(startRow, startCol, endRow, endCol);
+                this.clearMoveIndicators();
+                this.selectedPiece = null;
+                this.selectedSquare = null;
+              }
+            }
           }
-          // For opponent pieces, let the event bubble up to the square handler
+        });
+
+        // Touch event handling for mobile devices
+        piece.addEventListener("touchend", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const square = piece.closest(".square");
+          const row = parseInt(square.dataset.row);
+          const col = parseInt(square.dataset.col);
+          const pieceType = this.board[row][col];
+          const isWhitePiece = pieceType === pieceType.toUpperCase();
+
+          // Handle touches for current player's pieces
+          if (
+            (this.currentPlayer === "white" && isWhitePiece) ||
+            (this.currentPlayer === "black" && !isWhitePiece)
+          ) {
+            // If this piece is already selected, don't clear indicators
+            if (this.selectedPiece !== piece) {
+              this.clearMoveIndicators();
+              this.selectedPiece = piece;
+              this.selectedSquare = square;
+              this.showPossibleMoves(row, col);
+            }
+          } else {
+            // Handle touches on opponent pieces (for capture)
+            if (this.selectedPiece && this.selectedSquare) {
+              const startRow = parseInt(this.selectedSquare.dataset.row);
+              const startCol = parseInt(this.selectedSquare.dataset.col);
+              const endRow = parseInt(square.dataset.row);
+              const endCol = parseInt(square.dataset.col);
+
+              if (this.isValidMove(startRow, startCol, endRow, endCol)) {
+                this.makeMove(startRow, startCol, endRow, endCol);
+                this.clearMoveIndicators();
+                this.selectedPiece = null;
+                this.selectedSquare = null;
+              }
+            }
+          }
         });
 
         piece.addEventListener("dragstart", (e) => {
@@ -125,6 +201,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
       document.querySelectorAll(".square").forEach((square) => {
         square.addEventListener("click", (e) => {
+          if (this.selectedPiece && this.selectedSquare) {
+            const startRow = parseInt(this.selectedSquare.dataset.row);
+            const startCol = parseInt(this.selectedSquare.dataset.col);
+            const endRow = parseInt(square.dataset.row);
+            const endCol = parseInt(square.dataset.col);
+
+            if (this.isValidMove(startRow, startCol, endRow, endCol)) {
+              this.makeMove(startRow, startCol, endRow, endCol);
+              this.clearMoveIndicators();
+              this.selectedPiece = null;
+              this.selectedSquare = null;
+            } else {
+              this.clearMoveIndicators();
+              this.selectedPiece = null;
+              this.selectedSquare = null;
+            }
+          }
+        });
+
+        // Touch event handling for mobile square selection
+        square.addEventListener("touchend", (e) => {
+          e.preventDefault();
           if (this.selectedPiece && this.selectedSquare) {
             const startRow = parseInt(this.selectedSquare.dataset.row);
             const startCol = parseInt(this.selectedSquare.dataset.col);
@@ -188,9 +286,12 @@ document.addEventListener("DOMContentLoaded", () => {
         this.boardHistory = [];
         this.selectedPiece = null;
         this.selectedSquare = null;
+        this.movesList = [];
         this.clearMoveIndicators();
         this.createBoard(); // Re-render the board
         this.addDragListeners(); // Re-add listeners
+        this.updateTurnDisplay(); // Reset turn indicators
+        this.updateMobileMoves(); // Reset mobile moves display
       });
     }
 
@@ -810,8 +911,14 @@ document.addEventListener("DOMContentLoaded", () => {
       this.createBoard();
       this.addDragListeners();
 
-      this.movesHistory.innerHTML += `<p>${pieceType} from ${startRow},${startCol} to ${endRow},${endCol}</p>`;
+      // Add move to history
+      const moveNotation = this.getMoveNotation(pieceType, startRow, startCol, endRow, endCol);
+      this.movesList.push(moveNotation);
+      this.movesHistory.innerHTML += `<p>${moveNotation}</p>`;
       this.movesHistory.scrollTop = this.movesHistory.scrollHeight;
+      
+      // Update mobile moves display
+      this.updateMobileMoves();
 
       this.boardHistory.push(JSON.stringify(this.board));
       this.currentPlayer = this.currentPlayer === "white" ? "black" : "white";
@@ -839,6 +946,87 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (this.isThreefoldRepetition()) {
         alert("Draw by Threefold Repetition!");
       }
+    }
+
+    setupMovesPopup() {
+      // View all moves button functionality
+      viewAllMovesBtn.addEventListener("click", () => {
+        this.showMovesPopup();
+      });
+      
+      viewAllMovesBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        this.showMovesPopup();
+      });
+      
+      closePopup.addEventListener("click", () => {
+        this.hideMovesPopup();
+      });
+      
+      movesPopup.addEventListener("click", (e) => {
+        if (e.target === movesPopup) {
+          this.hideMovesPopup();
+        }
+      });
+    }
+
+    showMovesPopup() {
+      popupMovesList.innerHTML = "";
+      
+      if (this.movesList.length === 0) {
+        popupMovesList.innerHTML = '<div class="popup-move">No moves yet</div>';
+      } else {
+        this.movesList.forEach((move, index) => {
+          const moveDiv = document.createElement("div");
+          moveDiv.className = "popup-move";
+          moveDiv.textContent = `${index + 1}. ${move}`;
+          popupMovesList.appendChild(moveDiv);
+        });
+      }
+      
+      movesPopup.style.display = "flex";
+    }
+
+    updateMobileMoves() {
+      if (mobileRecentMoves) {
+        const recentMoves = this.movesList.slice(-3);
+        mobileRecentMoves.innerHTML = "";
+        
+        if (recentMoves.length === 0) {
+          mobileRecentMoves.innerHTML = '<div style="color: #999;">No moves yet</div>';
+        } else {
+          recentMoves.forEach((move, index) => {
+            const moveDiv = document.createElement("div");
+            moveDiv.textContent = `${this.movesList.length - recentMoves.length + index + 1}. ${move}`;
+            mobileRecentMoves.appendChild(moveDiv);
+          });
+        }
+      }
+    }
+
+    hideMovesPopup() {
+      movesPopup.style.display = "none";
+    }
+
+    getMoveNotation(pieceType, startRow, startCol, endRow, endCol) {
+      const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+      const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+      
+      const startSquare = files[startCol] + ranks[startRow];
+      const endSquare = files[endCol] + ranks[endRow];
+      
+      const pieceName = this.getPieceName(pieceType);
+      const isCapture = this.board[endRow][endCol] !== "";
+      
+      return `${pieceName}${startSquare}${isCapture ? 'x' : '-'}${endSquare}`;
+    }
+
+    getPieceName(piece) {
+      const pieceNames = {
+        'p': 'P', 'r': 'R', 'n': 'N', 'b': 'B', 'q': 'Q', 'k': 'K',
+        'P': 'P', 'R': 'R', 'N': 'N', 'B': 'B', 'Q': 'Q', 'K': 'K'
+      };
+      return pieceNames[piece] || piece;
     }
   }
 

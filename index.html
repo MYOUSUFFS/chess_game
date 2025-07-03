@@ -9,13 +9,36 @@
 <body>
     <div id="game-container">
         <div id="board-container">
+            <div id="top-player-indicator" class="player-indicator">
+                <span id="top-player-name">Black</span>
+                <div id="top-player-status" class="player-status"></div>
+            </div>
             <div id="chessboard"></div>
+            <div id="bottom-player-indicator" class="player-indicator">
+                <span id="bottom-player-name">White</span>
+                <div id="bottom-player-status" class="player-status active"></div>
+            </div>
         </div>
         <div id="sidebar">
             <div id="turn-display"></div>
             <div id="moves-history"></div>
+            <div id="mobile-moves-display" class="mobile-only">
+                <div id="mobile-recent-moves"></div>
+                <button id="view-all-moves">View All Moves</button>
+            </div>
             <div id="captured-pieces"></div>
             <button id="reset-button">Reset Game</button>
+        </div>
+    </div>
+    
+    <!-- Mobile moves history popup -->
+    <div id="moves-popup" class="moves-popup">
+        <div class="popup-content">
+            <div class="popup-header">
+                <h3>Recent Moves</h3>
+                <button id="close-popup">&times;</button>
+            </div>
+            <div id="popup-moves-list"></div>
         </div>
     </div>
     <script src="script.js"></script>
