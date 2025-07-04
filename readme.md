@@ -12,7 +12,7 @@ This is a simple chess game implemented in Flutter.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/chess_game.git
+   git clone https://github.com/myousuffs/chess_game.git
    ```
 2. Navigate to the project directory:
    ```bash

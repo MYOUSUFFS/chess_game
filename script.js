@@ -65,19 +65,22 @@ document.addEventListener("DOMContentLoaded", () => {
       this.undoTimeLeft = 0;
       this.undoTimerInterval = null;
 
+      this.loadGameState();
       this.createBoard();
       this.addDragListeners();
       this.setupResetButton();
       this.updateTurnDisplay();
       this.setupMovesPopup();
       this.setupUndoRedo();
+      this.updateMobileMoves();
+      this.updateUndoRedoButtons();
     }
 
     updateTurnDisplay() {
       turnDisplay.textContent = `${
         this.currentPlayer.charAt(0).toUpperCase() + this.currentPlayer.slice(1)
       }'s Turn`;
-      
+
       // Update player indicators
       if (this.currentPlayer === "white") {
         bottomPlayerStatus.classList.add("active");
@@ -304,6 +307,9 @@ document.addEventListener("DOMContentLoaded", () => {
         this.updateTurnDisplay(); // Reset turn indicators
         this.updateMobileMoves(); // Reset mobile moves display
         this.updateUndoRedoButtons();
+
+        // Clear localStorage when reset button is clicked
+        this.clearGameStateFromStorage();
       });
     }
 
@@ -823,7 +829,7 @@ document.addEventListener("DOMContentLoaded", () => {
     makeMove(startRow, startCol, endRow, endCol) {
       // Save current game state before making move
       this.saveGameState();
-      
+
       const pieceType = this.board[startRow][startCol];
       const isWhitePiece = pieceType === pieceType.toUpperCase();
 
@@ -927,21 +933,27 @@ document.addEventListener("DOMContentLoaded", () => {
       this.addDragListeners();
 
       // Add move to history
-      const moveNotation = this.getMoveNotation(pieceType, startRow, startCol, endRow, endCol);
+      const moveNotation = this.getMoveNotation(
+        pieceType,
+        startRow,
+        startCol,
+        endRow,
+        endCol
+      );
       this.movesList.push(moveNotation);
       this.movesHistory.innerHTML += `<p>${moveNotation}</p>`;
       this.movesHistory.scrollTop = this.movesHistory.scrollHeight;
-      
+
       // Update mobile moves display
       this.updateMobileMoves();
 
       this.boardHistory.push(JSON.stringify(this.board));
       this.currentPlayer = this.currentPlayer === "white" ? "black" : "white";
       this.updateTurnDisplay();
-      
+
       // Clear redo history when new move is made
       this.redoHistory = [];
-      
+
       // Start 5-second undo timer
       this.startUndoTimer();
 
@@ -967,6 +979,9 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (this.isThreefoldRepetition()) {
         alert("Draw by Threefold Repetition!");
       }
+
+      // Save game state after every move
+      this.saveGameStateToStorage();
     }
 
     setupMovesPopup() {
@@ -974,16 +989,16 @@ document.addEventListener("DOMContentLoaded", () => {
       viewAllMovesBtn.addEventListener("click", () => {
         this.showMovesPopup();
       });
-      
+
       viewAllMovesBtn.addEventListener("touchend", (e) => {
         e.preventDefault();
         this.showMovesPopup();
       });
-      
+
       closePopup.addEventListener("click", () => {
         this.hideMovesPopup();
       });
-      
+
       movesPopup.addEventListener("click", (e) => {
         if (e.target === movesPopup) {
           this.hideMovesPopup();
@@ -993,7 +1008,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     showMovesPopup() {
       popupMovesList.innerHTML = "";
-      
+
       if (this.movesList.length === 0) {
         popupMovesList.innerHTML = '<div class="popup-move">No moves yet</div>';
       } else {
@@ -1004,7 +1019,7 @@ document.addEventListener("DOMContentLoaded", () => {
           popupMovesList.appendChild(moveDiv);
         });
       }
-      
+
       movesPopup.style.display = "flex";
     }
 
@@ -1012,13 +1027,16 @@ document.addEventListener("DOMContentLoaded", () => {
       if (mobileRecentMoves) {
         const recentMoves = this.movesList.slice(-3);
         mobileRecentMoves.innerHTML = "";
-        
+
         if (recentMoves.length === 0) {
-          mobileRecentMoves.innerHTML = '<div style="color: #999;">No moves yet</div>';
+          mobileRecentMoves.innerHTML =
+            '<div style="color: #999;">No moves yet</div>';
         } else {
           recentMoves.forEach((move, index) => {
             const moveDiv = document.createElement("div");
-            moveDiv.textContent = `${this.movesList.length - recentMoves.length + index + 1}. ${move}`;
+            moveDiv.textContent = `${
+              this.movesList.length - recentMoves.length + index + 1
+            }. ${move}`;
             mobileRecentMoves.appendChild(moveDiv);
           });
         }
@@ -1030,22 +1048,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     getMoveNotation(pieceType, startRow, startCol, endRow, endCol) {
-      const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-      const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
-      
+      const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
+      const ranks = ["8", "7", "6", "5", "4", "3", "2", "1"];
+
       const startSquare = files[startCol] + ranks[startRow];
       const endSquare = files[endCol] + ranks[endRow];
-      
+
       const pieceName = this.getPieceName(pieceType);
       const isCapture = this.board[endRow][endCol] !== "";
-      
-      return `${pieceName}${startSquare}${isCapture ? 'x' : '-'}${endSquare}`;
+
+      return `${pieceName}${startSquare}${isCapture ? "x" : "-"}${endSquare}`;
     }
 
     getPieceName(piece) {
       const pieceNames = {
-        'p': 'P', 'r': 'R', 'n': 'N', 'b': 'B', 'q': 'Q', 'k': 'K',
-        'P': 'P', 'R': 'R', 'N': 'N', 'B': 'B', 'Q': 'Q', 'K': 'K'
+        p: "P",
+        r: "R",
+        n: "N",
+        b: "B",
+        q: "Q",
+        k: "K",
+        P: "P",
+        R: "R",
+        N: "N",
+        B: "B",
+        Q: "Q",
+        K: "K",
       };
       return pieceNames[piece] || piece;
     }
@@ -1054,7 +1082,7 @@ document.addEventListener("DOMContentLoaded", () => {
       undoButton.addEventListener("click", () => {
         this.undoMove();
       });
-      
+
       redoButton.addEventListener("click", () => {
         this.redoMove();
       });
@@ -1074,17 +1102,17 @@ document.addEventListener("DOMContentLoaded", () => {
         fiftyMoveRuleCounter: this.fiftyMoveRuleCounter,
         movesList: [...this.movesList],
         movesHistory: this.movesHistory.innerHTML,
-        capturedPieces: this.capturedPieces.innerHTML
+        capturedPieces: this.capturedPieces.innerHTML,
       };
       this.gameHistory.push(gameState);
     }
 
     undoMove() {
       if (this.gameHistory.length === 0 || this.undoTimeLeft <= 0) return;
-      
+
       // Clear the timer
       this.clearUndoTimer();
-      
+
       // Save current state to redo history
       const currentState = {
         board: JSON.parse(JSON.stringify(this.board)),
@@ -1099,10 +1127,10 @@ document.addEventListener("DOMContentLoaded", () => {
         fiftyMoveRuleCounter: this.fiftyMoveRuleCounter,
         movesList: [...this.movesList],
         movesHistory: this.movesHistory.innerHTML,
-        capturedPieces: this.capturedPieces.innerHTML
+        capturedPieces: this.capturedPieces.innerHTML,
       };
       this.redoHistory.push(currentState);
-      
+
       // Restore previous state
       const previousState = this.gameHistory.pop();
       this.restoreGameState(previousState);
@@ -1110,14 +1138,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     redoMove() {
       if (this.redoHistory.length === 0) return;
-      
+
       // Save current state to game history
       this.saveGameState();
-      
+
       // Restore redo state
       const redoState = this.redoHistory.pop();
       this.restoreGameState(redoState);
-      
+
       // Start undo timer again
       this.startUndoTimer();
     }
@@ -1136,7 +1164,7 @@ document.addEventListener("DOMContentLoaded", () => {
       this.movesList = gameState.movesList;
       this.movesHistory.innerHTML = gameState.movesHistory;
       this.capturedPieces.innerHTML = gameState.capturedPieces;
-      
+
       // Update display
       this.createBoard();
       this.addDragListeners();
@@ -1148,11 +1176,11 @@ document.addEventListener("DOMContentLoaded", () => {
     startUndoTimer() {
       this.undoTimeLeft = 5;
       this.updateUndoRedoButtons();
-      
+
       this.undoTimerInterval = setInterval(() => {
         this.undoTimeLeft--;
         this.updateTimerDisplay();
-        
+
         if (this.undoTimeLeft <= 0) {
           this.clearUndoTimer();
           this.updateUndoRedoButtons();
@@ -1172,22 +1200,91 @@ document.addEventListener("DOMContentLoaded", () => {
     updateTimerDisplay() {
       if (this.undoTimeLeft > 0) {
         undoTimer.textContent = `Undo available: ${this.undoTimeLeft}s`;
-        undoTimer.className = this.undoTimeLeft <= 2 ? 'timer-display urgent' : 'timer-display';
+        undoTimer.className =
+          this.undoTimeLeft <= 2 ? "timer-display urgent" : "timer-display";
       } else {
-        undoTimer.textContent = '';
-        undoTimer.className = 'timer-display';
+        undoTimer.textContent = "";
+        undoTimer.className = "timer-display";
       }
     }
 
     updateUndoRedoButtons() {
       // Update undo button
-      undoButton.disabled = this.gameHistory.length === 0 || this.undoTimeLeft <= 0;
-      
+      undoButton.disabled =
+        this.gameHistory.length === 0 || this.undoTimeLeft <= 0;
+
       // Update redo button
       redoButton.disabled = this.redoHistory.length === 0;
-      
+
       // Update timer display
       this.updateTimerDisplay();
+    }
+
+    loadGameState() {
+      try {
+        const savedState = localStorage.getItem("chessGameState");
+        if (savedState) {
+          const gameState = JSON.parse(savedState);
+          this.board = gameState.board;
+          this.currentPlayer = gameState.currentPlayer;
+          this.hasWhiteKingMoved = gameState.hasWhiteKingMoved;
+          this.hasBlackKingMoved = gameState.hasBlackKingMoved;
+          this.hasWhiteRookLeftMoved = gameState.hasWhiteRookLeftMoved;
+          this.hasWhiteRookRightMoved = gameState.hasWhiteRookRightMoved;
+          this.hasBlackRookLeftMoved = gameState.hasBlackRookLeftMoved;
+          this.hasBlackRookRightMoved = gameState.hasBlackRookRightMoved;
+          this.enPassantTargetSquare = gameState.enPassantTargetSquare;
+          this.fiftyMoveRuleCounter = gameState.fiftyMoveRuleCounter;
+          this.boardHistory = gameState.boardHistory;
+          this.movesList = gameState.movesList || [];
+          this.gameHistory = gameState.gameHistory || [];
+          this.redoHistory = gameState.redoHistory || [];
+
+          // Restore UI elements
+          if (gameState.movesHistory) {
+            this.movesHistory.innerHTML = gameState.movesHistory;
+          }
+          if (gameState.capturedPieces) {
+            this.capturedPieces.innerHTML = gameState.capturedPieces;
+          }
+        }
+      } catch (error) {
+        console.error("Error loading game state:", error);
+      }
+    }
+
+    saveGameStateToStorage() {
+      try {
+        const gameState = {
+          board: this.board,
+          currentPlayer: this.currentPlayer,
+          hasWhiteKingMoved: this.hasWhiteKingMoved,
+          hasBlackKingMoved: this.hasBlackKingMoved,
+          hasWhiteRookLeftMoved: this.hasWhiteRookLeftMoved,
+          hasWhiteRookRightMoved: this.hasWhiteRookRightMoved,
+          hasBlackRookLeftMoved: this.hasBlackRookLeftMoved,
+          hasBlackRookRightMoved: this.hasBlackRookRightMoved,
+          enPassantTargetSquare: this.enPassantTargetSquare,
+          fiftyMoveRuleCounter: this.fiftyMoveRuleCounter,
+          boardHistory: this.boardHistory,
+          movesList: this.movesList,
+          gameHistory: this.gameHistory,
+          redoHistory: this.redoHistory,
+          movesHistory: this.movesHistory.innerHTML,
+          capturedPieces: this.capturedPieces.innerHTML,
+        };
+        localStorage.setItem("chessGameState", JSON.stringify(gameState));
+      } catch (error) {
+        console.error("Error saving game state:", error);
+      }
+    }
+
+    clearGameStateFromStorage() {
+      try {
+        localStorage.removeItem("chessGameState");
+      } catch (error) {
+        console.error("Error clearing game state:", error);
+      }
     }
   }
 
