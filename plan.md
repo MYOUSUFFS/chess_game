@@ -79,20 +79,20 @@ Transform the existing local chess game into an online multiplayer experience wi
 ## Data Flow
 
 ### Game Start
-1. Player creates room ’ Server generates room ID
-2. Player shares room ID ’ Opponent joins room
-3. Server pairs players ’ Game begins with synchronized state
+1. Player creates room -> Server generates room ID
+2. Player shares room ID -> Opponent joins room
+3. Server pairs players -> Game begins with synchronized state
 
 ### Move Synchronization
-1. Player makes move ’ Client validates move locally
-2. Move sent to server ’ Server broadcasts to opponent
-3. Opponent receives move ’ Client updates board state
-4. Turn switches ’ UI updates for both players
+1. Player makes move -> Client validates move locally
+2. Move sent to server -> Server broadcasts to opponent
+3. Opponent receives move -> Client updates board state
+4. Turn switches -> UI updates for both players
 
 ### Reset Process
-1. Player requests reset ’ Server notifies opponent
-2. Opponent approves/denies ’ Server coordinates response
-3. Both approve ’ Game state resets for both players
+1. Player requests reset -> Server notifies opponent
+2. Opponent approves/denies -> Server coordinates response
+3. Both approve -> Game state resets for both players
 4. Game continues with fresh state
 
 This plan maintains all existing functionality while adding robust online multiplayer capabilities with efficient resource usage and smooth user experience.
