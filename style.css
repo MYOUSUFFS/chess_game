@@ -87,6 +87,19 @@ body {
     padding: 10px;
     background-color: #444;
     color: white;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: flex-start;
+    align-content: flex-start;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+#captured-pieces .piece {
+    width: 35px;
+    height: 35px;
+    cursor: default;
 }
 
 #reset-button {
@@ -234,6 +247,8 @@ body {
         gap: 2px;
         align-items: flex-start;
         align-content: flex-start;
+        overflow-y: auto;
+        box-sizing: border-box;
     }
     
     #captured-pieces .piece {
@@ -289,6 +304,8 @@ body {
     
     #captured-pieces {
         height: 60px;
+        overflow-y: auto;
+        box-sizing: border-box;
     }
     
     #captured-pieces .piece {
@@ -572,8 +589,20 @@ body {
     
     #captured-pieces {
         height: 100px;
-        display: block;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        align-items: flex-start;
+        align-content: flex-start;
         padding: 8px;
+        overflow-y: auto;
+        box-sizing: border-box;
+    }
+    
+    #captured-pieces .piece {
+        width: 30px;
+        height: 30px;
+        cursor: default;
     }
     
     #undo-redo-controls {
