@@ -32,18 +32,18 @@ document.addEventListener("DOMContentLoaded", () => {
       ];
       this.board = JSON.parse(JSON.stringify(this.initialBoard));
       this.pieceImage = {
-        r: "pieces-svg/rook-b.svg",
-        n: "pieces-svg/knight-b.svg",
-        b: "pieces-svg/bishop-b.svg",
-        q: "pieces-svg/queen-b.svg",
-        k: "pieces-svg/king-b.svg",
-        p: "pieces-svg/pawn-b.svg",
-        R: "pieces-svg/rook-w.svg",
-        N: "pieces-svg/knight-w.svg",
-        B: "pieces-svg/bishop-w.svg",
-        Q: "pieces-svg/queen-w.svg",
-        K: "pieces-svg/king-w.svg",
-        P: "pieces-svg/pawn-w.svg",
+        r: "/assets/images/pieces-svg/rook-b.svg",
+        n: "/assets/images/pieces-svg/knight-b.svg",
+        b: "/assets/images/pieces-svg/bishop-b.svg",
+        q: "/assets/images/pieces-svg/queen-b.svg",
+        k: "/assets/images/pieces-svg/king-b.svg",
+        p: "/assets/images/pieces-svg/pawn-b.svg",
+        R: "/assets/images/pieces-svg/rook-w.svg",
+        N: "/assets/images/pieces-svg/knight-w.svg",
+        B: "/assets/images/pieces-svg/bishop-w.svg",
+        Q: "/assets/images/pieces-svg/queen-w.svg",
+        K: "/assets/images/pieces-svg/king-w.svg",
+        P: "/assets/images/pieces-svg/pawn-w.svg",
       };
       this.draggedPiece = null;
       this.startSquare = null;
@@ -809,9 +809,9 @@ document.addEventListener("DOMContentLoaded", () => {
             indicator.classList.add("move-indicator");
 
             if (this.board[endRow][endCol]) {
-              indicator.src = "red-dot.gif";
+              indicator.src = "/assets/images/red-dot.gif";
             } else {
-              indicator.src = "green-dot.gif";
+              indicator.src = "/assets/images/green-dot.gif";
             }
 
             targetSquare.appendChild(indicator);

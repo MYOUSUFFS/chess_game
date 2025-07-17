@@ -54,9 +54,13 @@ chess_game/
 ├── index.html          # Main game interface
 ├── script.js           # Game logic and interactions
 ├── style.css           # Styling and responsive design
-├── pieces-svg/         # Chess piece SVG files
-├── plan.md            # Development roadmap
-└── readme.md          # This file
+├── docs/
+│   └── LawsOfChess.pdf     # Chess Law
+│   └── plan.md             # Development roadmap
+│── assets/
+|     images/
+│     └── pieces-svg/   # Chess piece SVG files & All
+└── readme.md           # Project documentation
 ```
 
 ## Future Plans
